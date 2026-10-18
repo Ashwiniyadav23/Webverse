@@ -3,6 +3,9 @@ import { useState } from 'react'
 import HomePage from './pages/HomePage'
 import CoursePage from './pages/CoursePage'
 import LessonPage from './pages/LessonPage'
+import DashboardPage from './pages/DashboardPage'
+import PlaygroundPage from "./pages/PlaygroundPage";
+import JavaScriptPlayground from "./pages/JavaScriptPlayground";
 import {
   BookOpen,
   Code2,
@@ -48,7 +51,10 @@ function App() {
       <Route path="/home" element={<WebVerseLanding />} />
       <Route path="/courses/:courseId" element={<CoursePage />} />
       <Route path="/lessons/:lessonId" element={<LessonPage />} />
-  </Routes>
+      <Route path="/dashboard" element={<DashboardPage />} />
+      <Route path="/playground" element={<PlaygroundPage />} />
+      <Route path="/js-playground" element={<JavaScriptPlayground />} />
+    </Routes>
   )
 }
 
