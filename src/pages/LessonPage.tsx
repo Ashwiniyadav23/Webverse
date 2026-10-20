@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
@@ -185,6 +184,8 @@ export default function LessonPage() {
   }
 
   function markComplete() {
+    if (!lesson) return;
+
     saveLessonProgress(lesson.id, {
       completed: true,
       quizScore: quizScore ?? 0,
