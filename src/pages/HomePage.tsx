@@ -12,7 +12,8 @@ import {
   Palette,
   Terminal,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { clearAuth, getAuth } from "../utils/auth";
 
 const courses = [
   {
@@ -48,6 +49,14 @@ const courses = [
 ];
 
 function HomePage() {
+  const navigate = useNavigate();
+  const auth = getAuth();
+
+  function logout() {
+    clearAuth();
+    navigate("/", { replace: true });
+  }
+
   return (
     <div className="min-h-screen overflow-hidden bg-slate-950 text-white">
       {/* Navigation */}
@@ -96,13 +105,39 @@ function HomePage() {
             </Link>
           </div>
 
-          <Link
-            to="/courses/explorers"
-            className="flex shrink-0 items-center gap-2 rounded-xl bg-cyan-400 px-4 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-cyan-300"
-          >
-            Start Learning
-            <ArrowRight size={16} />
-          </Link>
+          <div className="flex shrink-0 items-center gap-2">
+            {!auth ? (
+              <>
+                <Link
+                  to="/login"
+                  className="rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-200 hover:text-cyan-400"
+                >
+                  Sign in
+                </Link>
+                <Link
+                  to="/register"
+                  className="rounded-xl border border-cyan-400/50 px-3 py-2.5 text-sm font-bold text-cyan-300 hover:bg-cyan-400/10"
+                >
+                  Sign up
+                </Link>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={logout}
+                className="rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-200 hover:text-cyan-400"
+              >
+                Sign out
+              </button>
+            )}
+            <Link
+              to="/courses/explorers"
+              className="flex items-center gap-2 rounded-xl bg-cyan-400 px-4 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-cyan-300"
+            >
+              Start Learning
+              <ArrowRight size={16} />
+            </Link>
+          </div>
         </nav>
       </header>
 

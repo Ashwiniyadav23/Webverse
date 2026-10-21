@@ -6,6 +6,12 @@ import LessonPage from './pages/LessonPage'
 import DashboardPage from './pages/DashboardPage'
 import PlaygroundPage from "./pages/PlaygroundPage";
 import JavaScriptPlayground from "./pages/JavaScriptPlayground";
+import RoleRoute from "./pages/RoleRoute";
+import AdminPage from "./pages/AdminPage";
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
+import MyCourses from "./pages/MyCourses";
+
 import {
   BookOpen,
   Code2,
@@ -18,7 +24,11 @@ import {
   Routes,
   Route,
   Link,
+  Navigate,
+  Outlet,
+  useLocation,
 } from 'react-router-dom'
+import { getAuth } from "./utils/auth";
 
 const courses = [
   {
@@ -49,13 +59,77 @@ function App() {
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/home" element={<WebVerseLanding />} />
-      <Route path="/courses/:courseId" element={<CoursePage />} />
-      <Route path="/lessons/:lessonId" element={<LessonPage />} />
-      <Route path="/dashboard" element={<DashboardPage />} />
+      <Route element={<StudentAccessRoute />}>
+        <Route path="/courses/:courseId" element={<CoursePage />} />
+        <Route path="/lessons/:lessonId" element={<LessonPage />} />
+      </Route>
+      <Route path="/dashboard" element={<RoleRoute allowedRole="student" />}>
+        <Route index element={<DashboardPage />} />
+      </Route>
       <Route path="/playground" element={<PlaygroundPage />} />
       <Route path="/js-playground" element={<JavaScriptPlayground />} />
+      <Route path="/admin" element={<RoleRoute allowedRole={["super_admin", "school_admin"]} />}>
+        <Route index element={<AdminPage />} />
+      </Route>
+      <Route path="/school-admin" element={<RoleRoute allowedRole="school_admin" />}>
+        <Route index element={<RoleDashboardPage role="school_admin" />} />
+      </Route>
+      <Route path="/super-admin" element={<RoleRoute allowedRole="super_admin" />}>
+        <Route index element={<RoleDashboardPage role="super_admin" />} />
+      </Route>
+      <Route path="/teacher" element={<RoleRoute allowedRole="teacher" />}>
+        <Route index element={<RoleDashboardPage role="teacher" />} />
+      </Route>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/my-courses" element={<MyCourses />} />
+
     </Routes>
   )
+}
+
+function RoleDashboardPage({ role }: { role: "teacher" | "school_admin" | "super_admin" }) {
+  const labels = {
+    teacher: ["Teacher Dashboard", "Manage assigned classes, lessons, assessments, and student progress."],
+    school_admin: ["School Admin Dashboard", "Manage teachers, students, classes, and curriculum for your school."],
+    super_admin: ["Super Admin Dashboard", "Manage users, roles, curriculum, classes, and platform settings."],
+  } as const;
+  const [title, description] = labels[role];
+
+  return (
+    <main className="min-h-screen bg-slate-950 p-8 text-white">
+      <h1 className="text-3xl font-bold">{title}</h1>
+      <p className="mt-3 max-w-2xl text-slate-300">{description}</p>
+      <section className="mt-8 grid gap-4 md:grid-cols-3">
+        {["Users and permissions", "Curriculum and classes", "Progress and submissions"].map((item) => (
+          <article key={item} className="rounded-2xl border border-white/10 bg-slate-900 p-5">
+            <h2 className="font-semibold">{item}</h2>
+            <p className="mt-2 text-sm text-slate-400">Available according to your role permissions.</p>
+          </article>
+        ))}
+      </section>
+    </main>
+  );
+}
+
+function StudentAccessRoute() {
+  const location = useLocation();
+  const auth = getAuth();
+
+  if (!auth?.token || !auth.user) {
+    return (
+      <Navigate
+        to="/register"
+        replace
+        state={{
+          from: `${location.pathname}${location.search}`,
+          message: "Create a student account before starting a course.",
+        }}
+      />
+    );
+  }
+
+  return <Outlet />;
 }
 
 function WebVerseLanding() {

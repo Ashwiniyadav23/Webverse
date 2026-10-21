@@ -1,5 +1,5 @@
 
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   BookOpen,
   CheckCircle2,
@@ -14,6 +14,7 @@ import {
   LockKeyhole,
 } from "lucide-react";
 import { getProgress } from "../utils/progress";
+import { clearAuth } from "../utils/auth";
 
 const courses = [
   {
@@ -43,6 +44,7 @@ const courses = [
 ];
 
 export default function DashboardPage() {
+  const navigate = useNavigate();
   const progress = getProgress();
 
   const completedLessons = Object.values(progress).filter(
@@ -103,6 +105,16 @@ export default function DashboardPage() {
             >
               Learn Now
             </Link>
+            <button
+              type="button"
+              onClick={() => {
+                clearAuth();
+                navigate("/login", { replace: true });
+              }}
+              className="text-slate-300 hover:text-cyan-400"
+            >
+              Sign out
+            </button>
           </nav>
         </div>
       </header>
