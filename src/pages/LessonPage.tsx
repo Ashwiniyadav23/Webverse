@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -12,6 +12,19 @@ import {
   Trophy,
 } from "lucide-react";
 import { getProgress, saveLessonProgress } from "../utils/progress";
+import {
+  htmlMilestones,
+  htmlMilestoneOneAssignments,
+  htmlMilestoneOneInterviewQuestions,
+  htmlMilestoneOneTopics,
+  htmlMilestoneTwoAssignments,
+  htmlMilestoneTwoInterviewQuestions,
+  htmlMilestoneTwoTopics,
+  htmlMilestoneThreeAssignments,
+  htmlMilestoneThreeInterviewQuestions,
+  htmlMilestoneThreeTopics,
+} from "../data/htmlFundamentals";
+import HtmlFundamentalsMilestone from "./HtmlFundamentalsMilestone";
 
 type Question = {
   question: string;
@@ -29,9 +42,38 @@ type Lesson = {
   expectedText: string;
   hint: string;
   questions: Question[];
+  tasks?: { title: string; brief: string; starter: string }[];
+  interviewQuestions?: { question: string; answer: string }[];
+  mdn?: { title: string; url: string }[];
+  topics?: string[];
+  syntax?: string;
+  example?: string;
+  coursePath?: string;
 };
 
 const lessons: Lesson[] = [
+  ...htmlMilestones.map((milestone): Lesson => ({
+    id: milestone.id,
+    title: milestone.title,
+    description: milestone.description,
+    theory: [],
+    starterCode: milestone.tasks[0].starter,
+    expectedText: milestone.tasks[0].title,
+    hint: "Start with a meaningful document structure, then add one element at a time. Check that every opening tag is correctly nested and closed.",
+    questions: milestone.questions.map((item) => ({
+      question: item.question,
+      options: [item.answer, "HTML is only used to add colors.", "Browsers ignore this HTML feature."],
+      answer: 0,
+      explanation: item.answer,
+    })),
+    tasks: milestone.tasks,
+    interviewQuestions: milestone.questions,
+    mdn: milestone.mdn,
+    topics: milestone.topics,
+    syntax: milestone.syntax,
+    example: milestone.example,
+    coursePath: "/courses/html-fundamentals",
+  })),
   {
     id: "html-intro",
     title: "Introduction to HTML",
@@ -114,25 +156,6 @@ export default function LessonPage() {
   const { lessonId } = useParams<{ lessonId: string }>();
   const lesson = lessons.find((item) => item.id === lessonId);
 
-  const [code, setCode] = useState(lesson?.starterCode ?? "");
-  const [showHint, setShowHint] = useState(false);
-  const [answers, setAnswers] = useState<Record<number, number>>({});
-  const [quizSubmitted, setQuizSubmitted] = useState(false);
-  const [quizScore, setQuizScore] = useState<number | null>(null);
-  const [completed, setCompleted] = useState(false);
-
-  useEffect(() => {
-    if (!lesson) return;
-
-    const saved = getProgress()[lesson.id];
-    setCode(lesson.starterCode);
-    setShowHint(false);
-    setAnswers({});
-    setQuizSubmitted(false);
-    setQuizScore(null);
-    setCompleted(Boolean(saved?.completed));
-  }, [lesson?.id]);
-
   if (!lesson) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-slate-950 px-5 text-white">
@@ -152,6 +175,59 @@ export default function LessonPage() {
       </main>
     );
   }
+
+  if (lesson.id === "html-milestone-1") {
+    return <HtmlFundamentalsMilestone
+      lessonId={lesson.id}
+      milestoneNumber={1}
+      milestoneTitle="HTML Fundamentals"
+      topics={htmlMilestoneOneTopics}
+      assignments={htmlMilestoneOneAssignments}
+      interviewQuestions={htmlMilestoneOneInterviewQuestions}
+      referenceTitle="MDN: Structuring content with HTML"
+      referenceUrl="https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Structuring_content"
+    />;
+  }
+
+  if (lesson.id === "html-milestone-2") {
+    return <HtmlFundamentalsMilestone
+      lessonId={lesson.id}
+      milestoneNumber={2}
+      milestoneTitle="Links, Images, Tables & Multimedia"
+      topics={htmlMilestoneTwoTopics}
+      assignments={htmlMilestoneTwoAssignments}
+      interviewQuestions={htmlMilestoneTwoInterviewQuestions}
+      referenceTitle="MDN: HTML elements reference"
+      referenceUrl="https://developer.mozilla.org/en-US/docs/Web/HTML/Element"
+    />;
+  }
+
+  if (lesson.id === "html-milestone-3") {
+    return <HtmlFundamentalsMilestone
+      lessonId={lesson.id}
+      milestoneNumber={3}
+      milestoneTitle="HTML Forms, Semantics & Accessibility"
+      topics={htmlMilestoneThreeTopics}
+      assignments={htmlMilestoneThreeAssignments}
+      interviewQuestions={htmlMilestoneThreeInterviewQuestions}
+      referenceTitle="MDN: HTML forms guide"
+      referenceUrl="https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Forms"
+    />;
+  }
+
+  return <LessonView key={lesson.id} lesson={lesson} />;
+}
+
+function LessonView({ lesson }: { lesson: Lesson }) {
+  const coursePath = lesson.coursePath || "/courses/explorers";
+  const saved = getProgress()[lesson.id];
+  const [code, setCode] = useState(lesson.starterCode);
+  const [showHint, setShowHint] = useState(false);
+  const [answers, setAnswers] = useState<Record<number, number>>({});
+  const [quizSubmitted, setQuizSubmitted] = useState(Boolean(saved?.completed));
+  const [quizScore, setQuizScore] = useState<number | null>(saved?.quizScore ?? null);
+  const [completed, setCompleted] = useState(Boolean(saved?.completed));
+  const [activeTask, setActiveTask] = useState(0);
 
   const correctAnswers = lesson.questions.filter(
     (question, index) => answers[index] === question.answer
@@ -219,7 +295,7 @@ h2 { color: #475569; }
           </Link>
 
           <Link
-            to="/courses/explorers"
+            to={coursePath}
             className="inline-flex items-center gap-2 text-sm text-slate-300 hover:text-cyan-400"
           >
             <ArrowLeft size={16} /> Back to Course
@@ -252,6 +328,18 @@ h2 { color: #475569; }
                 <h2 className="text-xl font-black">Learn the concept</h2>
               </div>
 
+              {lesson.topics && (
+                <>
+                  <h3 className="mt-5 font-bold text-white">Topics</h3>
+                  <ul className="mt-2 list-disc space-y-1 pl-5 text-slate-300">
+                    {lesson.topics.map((topic) => <li key={topic}>{topic}</li>)}
+                  </ul>
+                  <h3 className="mt-5 font-bold text-white">Syntax</h3>
+                  <pre className="mt-2 overflow-x-auto rounded-xl bg-slate-950 p-4 text-sm leading-6 text-cyan-100"><code>{lesson.syntax}</code></pre>
+                  <h3 className="mt-5 font-bold text-white">Working example</h3>
+                  <pre className="mt-2 overflow-x-auto rounded-xl bg-slate-950 p-4 text-sm leading-6 text-cyan-100"><code>{lesson.example}</code></pre>
+                </>
+              )}
               <div className="mt-5 space-y-4">
                 {lesson.theory.map((paragraph, index) => (
                   <p
@@ -262,6 +350,29 @@ h2 { color: #475569; }
                   </p>
                 ))}
               </div>
+              {lesson.interviewQuestions && (
+                <section className="mt-6 border-t border-white/10 pt-5">
+                  <h3 className="text-lg font-black">Interview questions and answers</h3>
+                  <dl className="mt-4 space-y-4">
+                    {lesson.interviewQuestions.map((item) => (
+                      <div key={item.question}>
+                        <dt className="font-semibold text-slate-200">{item.question}</dt>
+                        <dd className="mt-1 text-sm leading-6 text-slate-400">{item.answer}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </section>
+              )}
+              {lesson.mdn && (
+                <section className="mt-6 border-t border-white/10 pt-5">
+                  <h3 className="font-black">MDN references</h3>
+                  <ul className="mt-3 space-y-2">
+                    {lesson.mdn.map((resource) => (
+                      <li key={resource.url}><a className="text-sm text-cyan-300 underline hover:text-cyan-200" href={resource.url} target="_blank" rel="noreferrer">{resource.title}</a></li>
+                    ))}
+                  </ul>
+                </section>
+              )}
             </article>
 
             <article className="rounded-2xl border border-white/10 bg-slate-900 p-6">
@@ -436,7 +547,18 @@ h2 { color: #475569; }
                 )}
               </div>
 
-              <div className="mt-5 rounded-xl bg-slate-950 p-4">
+              {lesson.tasks ? (
+                <div className="mt-5 space-y-3 rounded-xl bg-slate-950 p-4">
+                  <p className="text-sm font-bold">Milestone practical tasks</p>
+                  {lesson.tasks.map((task, index) => (
+                    <article key={task.title} className={`rounded-lg border p-3 ${activeTask === index ? "border-cyan-400/60 bg-cyan-400/5" : "border-white/10"}`}>
+                      <button type="button" onClick={() => { setActiveTask(index); setCode(task.starter); }} className="text-left font-semibold text-cyan-200 hover:text-cyan-100">{index + 1}. {task.title}</button>
+                      <p className="mt-1 text-sm leading-6 text-slate-400">{task.brief}</p>
+                    </article>
+                  ))}
+                  <p className="text-xs text-slate-500">Select a task to load its starter code. Complete all tasks, then mark this milestone complete.</p>
+                </div>
+              ) : <div className="mt-5 rounded-xl bg-slate-950 p-4">
                 <p className="text-sm font-bold">Your coding task</p>
                 <p className="mt-2 text-sm leading-6 text-slate-400">
                   Edit the HTML and add your own content. Try changing the
@@ -446,7 +568,7 @@ h2 { color: #475569; }
                 <p className="mt-3 text-xs text-slate-500">
                   Example heading to find in the preview: {lesson.expectedText}
                 </p>
-              </div>
+              </div>}
 
               <button
                 onClick={markComplete}

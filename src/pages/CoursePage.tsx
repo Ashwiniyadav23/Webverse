@@ -11,6 +11,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { getProgress } from "../utils/progress";
+import { htmlCourseId, htmlMilestones } from "../data/htmlFundamentals";
 
 type Lesson = {
   id: string;
@@ -31,6 +32,21 @@ type Course = {
 };
 
 const courses: Course[] = [
+  {
+    id: htmlCourseId,
+    title: "HTML Fundamentals",
+    classes: "Beginner",
+    description: "Learn essential HTML and build accessible, well-structured pages through four practical milestones.",
+    level: "Beginner",
+    color: "from-cyan-500 to-blue-600",
+    lessons: htmlMilestones.map((milestone) => ({
+      id: milestone.id,
+      title: milestone.title,
+      description: milestone.description,
+      duration: `${milestone.tasks.length} practical tasks`,
+      available: true,
+    })),
+  },
   {
     id: "explorers",
     title: "Web Explorers",
@@ -228,7 +244,7 @@ export default function CoursePage() {
               <div className="mt-6 flex flex-wrap gap-5 text-sm text-white/90">
                 <span className="flex items-center gap-2">
                   <BookOpen size={18} />
-                  {course.lessons.length} lessons
+                  {course.lessons.length} {course.id === htmlCourseId ? "milestones" : "lessons"}
                 </span>
                 <span className="flex items-center gap-2">
                   <PlayCircle size={18} />
@@ -254,7 +270,7 @@ export default function CoursePage() {
               </div>
 
               <p className="mt-3 text-sm text-white/80">
-                {completedCount} of {course.lessons.length} lessons completed
+                {completedCount} of {course.lessons.length} {course.id === htmlCourseId ? "milestones" : "lessons"} completed
               </p>
             </div>
           </div>
@@ -266,10 +282,10 @@ export default function CoursePage() {
               Course curriculum
             </p>
             <h2 className="mt-2 text-2xl font-black sm:text-3xl">
-              Your lessons
+              {course.id === htmlCourseId ? "Your milestones" : "Your lessons"}
             </h2>
             <p className="mt-2 text-slate-400">
-              Open an available lesson to learn and practice.
+              {course.id === htmlCourseId ? "Complete each milestone to track your course progress." : "Open an available lesson to learn and practice."}
             </p>
           </div>
 
@@ -357,7 +373,7 @@ export default function CoursePage() {
           </div>
         </section>
 
-        <section className="mt-10 rounded-2xl border border-cyan-400/20 bg-cyan-400/5 p-6 sm:p-8">
+        {course.id !== htmlCourseId && <section className="mt-10 rounded-2xl border border-cyan-400/20 bg-cyan-400/5 p-6 sm:p-8">
           <h2 className="text-xl font-black">Ready to practice?</h2>
           <p className="mt-2 text-slate-400">
             Try your HTML and CSS ideas in the interactive playground.
@@ -368,7 +384,7 @@ export default function CoursePage() {
           >
             Open CSS Playground <ArrowRight size={17} />
           </Link>
-        </section>
+        </section>}
       </main>
     </div>
   );

@@ -7,10 +7,16 @@ import DashboardPage from './pages/DashboardPage'
 import PlaygroundPage from "./pages/PlaygroundPage";
 import JavaScriptPlayground from "./pages/JavaScriptPlayground";
 import RoleRoute from "./pages/RoleRoute";
-import AdminPage from "./pages/AdminPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import MyCourses from "./pages/MyCourses";
+import AdminLayout from "./pages/admin/AdminLayout";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminCourses from "./pages/admin/AdminCourses";
+import AdminCourseForm from "./pages/admin/AdminCourseForm";
+import AdminCourseLessons from "./pages/admin/AdminCourseLessons";
+import AdminLessonForm from "./pages/admin/AdminLessonForm";
+import AdminStudents from "./pages/admin/AdminStudents";
 
 import {
   BookOpen,
@@ -68,8 +74,18 @@ function App() {
       </Route>
       <Route path="/playground" element={<PlaygroundPage />} />
       <Route path="/js-playground" element={<JavaScriptPlayground />} />
+      <Route path="/javascript-playground" element={<JavaScriptPlayground />} />
       <Route path="/admin" element={<RoleRoute allowedRole={["super_admin", "school_admin"]} />}>
-        <Route index element={<AdminPage />} />
+        <Route element={<AdminLayout />}>
+          <Route index element={<AdminDashboard />} />
+          <Route path="courses" element={<AdminCourses />} />
+          <Route path="courses/new" element={<AdminCourseForm />} />
+          <Route path="courses/:courseId/edit" element={<AdminCourseForm />} />
+          <Route path="courses/:courseId/lessons" element={<AdminCourseLessons />} />
+          <Route path="courses/:courseId/lessons/new" element={<AdminLessonForm />} />
+          <Route path="courses/:courseId/lessons/:lessonId/edit" element={<AdminLessonForm />} />
+          <Route path="students" element={<AdminStudents />} />
+        </Route>
       </Route>
       <Route path="/school-admin" element={<RoleRoute allowedRole="school_admin" />}>
         <Route index element={<RoleDashboardPage role="school_admin" />} />
@@ -82,7 +98,10 @@ function App() {
       </Route>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
-      <Route path="/my-courses" element={<MyCourses />} />
+      <Route path="/my-courses" element={<RoleRoute allowedRole="student" />}>
+        <Route index element={<MyCourses />} />
+      </Route>
+      <Route path="*" element={<Navigate to="/" replace />} />
 
     </Routes>
   )

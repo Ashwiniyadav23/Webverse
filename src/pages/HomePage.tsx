@@ -17,6 +17,15 @@ import { clearAuth, getAuth } from "../utils/auth";
 
 const courses = [
   {
+    id: "html-fundamentals",
+    level: "Beginner · 4 Milestones",
+    title: "HTML Fundamentals",
+    description: "Learn essential HTML through practical, milestone-based projects.",
+    topics: ["HTML structure", "Links & media", "Forms", "Portfolio"],
+    icon: Code2,
+    gradient: "from-cyan-400/15 to-blue-500/5",
+  },
+  {
     id: "explorers",
     level: "Classes 6–8",
     title: "Web Explorers",
@@ -103,6 +112,22 @@ function HomePage() {
               <LayoutDashboard size={16} />
               Dashboard
             </Link>
+            {auth?.user && auth.user.role === "student" && (
+              <Link
+                to="/my-courses"
+                className="text-sm text-slate-300 transition hover:text-cyan-400"
+              >
+                My Courses
+              </Link>
+            )}
+            {auth?.user && ["super_admin", "school_admin"].includes(auth.user.role) && (
+              <Link
+                to="/admin"
+                className="text-sm text-slate-300 transition hover:text-cyan-400"
+              >
+                Admin Panel
+              </Link>
+            )}
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
@@ -131,7 +156,7 @@ function HomePage() {
               </button>
             )}
             <Link
-              to="/courses/explorers"
+              to="/courses/html-fundamentals"
               className="flex items-center gap-2 rounded-xl bg-cyan-400 px-4 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-cyan-300"
             >
               Start Learning
@@ -169,7 +194,7 @@ function HomePage() {
 
               <div className="mt-8 flex flex-wrap gap-4">
                 <Link
-                  to="/courses/explorers"
+                  to="/courses/html-fundamentals"
                   className="inline-flex items-center gap-2 rounded-xl bg-cyan-400 px-6 py-3.5 font-bold text-slate-950 transition hover:-translate-y-0.5 hover:bg-cyan-300"
                 >
                   <Play size={18} />

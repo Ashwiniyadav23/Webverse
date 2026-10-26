@@ -2,6 +2,9 @@
 export type LessonProgress = {
   completed: boolean;
   quizScore?: number;
+  topicScores?: Record<string, number>;
+  topicAttempts?: Record<string, number>;
+  assignmentChecks?: Record<string, boolean>;
 };
 
 export type StudentProgress = Record<string, LessonProgress>;

@@ -92,7 +92,7 @@ export default function JavaScriptPlayground() {
 
         window.addEventListener("load", () => {
           try {
-            const userCode = ${JSON.stringify(code)};
+            const userCode = ${JSON.stringify(code).replace(/<\/script/gi, "<\\/script")};
             new Function(userCode)();
           } catch (error) {
             send({
@@ -105,7 +105,7 @@ export default function JavaScriptPlayground() {
             send({ type: "done" });
           }
         });
-      <\/script>
+      </script>
     `;
   }
 

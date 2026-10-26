@@ -13,7 +13,7 @@ import {
   PlayCircle,
   LockKeyhole,
 } from "lucide-react";
-import { getProgress } from "../utils/progress";
+import { getProgress, type LessonProgress } from "../utils/progress";
 import { clearAuth } from "../utils/auth";
 
 const courses = [
@@ -48,12 +48,12 @@ export default function DashboardPage() {
   const progress = getProgress();
 
   const completedLessons = Object.values(progress).filter(
-    (item: any) => item?.completed
+    (item: LessonProgress) => item?.completed
   ).length;
 
   const quizScores = Object.values(progress)
-    .map((item: any) => item?.quizScore)
-    .filter((score: any) => typeof score === "number");
+    .map((item: LessonProgress) => item?.quizScore)
+    .filter((score): score is number => typeof score === "number");
 
   const averageScore = quizScores.length
     ? Math.round(
@@ -92,6 +92,9 @@ export default function DashboardPage() {
           <nav className="flex items-center gap-4 text-sm">
             <Link to="/" className="text-slate-300 hover:text-cyan-400">
               Home
+            </Link>
+            <Link to="/my-courses" className="text-slate-300 hover:text-cyan-400">
+              My Courses
             </Link>
             <Link
               to="/playground"

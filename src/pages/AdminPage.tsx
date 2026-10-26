@@ -7,6 +7,11 @@ import { apiUrl } from "../utils/api";
 export default function AdminPage() {
   const navigate = useNavigate();
   const [message, setMessage] = useState("Verifying admin access...");
+  const [stats, setStats] = useState<{
+    totalUsers: number;
+    totalStudents: number;
+    totalAdmins: number;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -21,10 +26,10 @@ export default function AdminPage() {
     }
 
     fetch(apiUrl("admin/dashboard"), {
-  headers: {
-    Authorization: `Bearer ${auth.token}`,
-  },
-})
+      headers: {
+        Authorization: `Bearer ${auth.token}`,
+      },
+    })
       .then(async (response) => {
         const data = await response.json();
 
@@ -33,6 +38,9 @@ export default function AdminPage() {
         }
 
         setMessage(data.message);
+        if (data.stats) {
+          setStats(data.stats);
+        }
       })
       .catch((error: Error) => {
         setMessage(error.message);
@@ -67,32 +75,32 @@ export default function AdminPage() {
 
       <section className="grid gap-5 md:grid-cols-3">
         <div className="rounded-2xl bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold">Students</h2>
-          <p className="mt-2 text-slate-500">
-            Manage student accounts
+          <h2 className="text-lg font-semibold">Total Students</h2>
+          <p className="mt-2 text-3xl font-bold text-indigo-600">
+            {stats ? stats.totalStudents : "—"}
           </p>
-          <p className="mt-4 text-sm text-indigo-600">
-            Coming next
-          </p>
-        </div>
-
-        <div className="rounded-2xl bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold">Courses & Lessons</h2>
-          <p className="mt-2 text-slate-500">
-            Manage learning content
-          </p>
-          <p className="mt-4 text-sm text-indigo-600">
-            Coming next
+          <p className="mt-2 text-sm text-slate-500">
+            Registered student accounts
           </p>
         </div>
 
         <div className="rounded-2xl bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold">Student Progress</h2>
-          <p className="mt-2 text-slate-500">
-            Review quizzes and completion
+          <h2 className="text-lg font-semibold">Administrators</h2>
+          <p className="mt-2 text-3xl font-bold text-indigo-600">
+            {stats ? stats.totalAdmins : "—"}
           </p>
-          <p className="mt-4 text-sm text-indigo-600">
-            Coming next
+          <p className="mt-2 text-sm text-slate-500">
+            Super admins & school admins
+          </p>
+        </div>
+
+        <div className="rounded-2xl bg-white p-6 shadow-sm">
+          <h2 className="text-lg font-semibold">Total Users</h2>
+          <p className="mt-2 text-3xl font-bold text-indigo-600">
+            {stats ? stats.totalUsers : "—"}
+          </p>
+          <p className="mt-2 text-sm text-slate-500">
+            All registered platform users
           </p>
         </div>
       </section>
