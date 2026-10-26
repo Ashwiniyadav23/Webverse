@@ -18,10 +18,10 @@ import { clearAuth, getAuth } from "../utils/auth";
 const courses = [
   {
     id: "html-fundamentals",
-    level: "Beginner · 4 Milestones",
-    title: "HTML Fundamentals",
-    description: "Learn essential HTML through practical, milestone-based projects.",
-    topics: ["HTML structure", "Links & media", "Forms", "Portfolio"],
+    level: "Beginner · Phase 1",
+    title: "Student Profile & Course Portal (HTML Only)",
+    description: "Learn the HTML concepts first, then build a six-page student portal.",
+    topics: ["Document structure", "Navigation", "Forms", "Tables"],
     icon: Code2,
     gradient: "from-cyan-400/15 to-blue-500/5",
   },

@@ -1,5 +1,6 @@
 
 import { Link, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -11,7 +12,10 @@ import {
   Sparkles,
 } from "lucide-react";
 import { getProgress } from "../utils/progress";
-import { htmlCourseId, htmlMilestones } from "../data/htmlFundamentals";
+import { htmlCourseId } from "../data/htmlFundamentals";
+import { phaseOneSections } from "../data/htmlPhaseOne";
+import { apiUrl } from "../utils/api";
+import { getAuth } from "../utils/auth";
 
 type Lesson = {
   id: string;
@@ -19,6 +23,9 @@ type Lesson = {
   description: string;
   duration: string;
   available: boolean;
+  order?: number;
+  topicCount?: number;
+  taskCount?: number;
 };
 
 type Course = {
@@ -34,18 +41,24 @@ type Course = {
 const courses: Course[] = [
   {
     id: htmlCourseId,
-    title: "HTML Fundamentals",
+    title: "Phase 1 — Student Profile & Course Portal (HTML Only)",
     classes: "Beginner",
-    description: "Learn essential HTML and build accessible, well-structured pages through four practical milestones.",
+    description: "Learn HTML structure, navigation, content, semantic organization, forms, and tables, then build a six-page student portal. HTML only.",
     level: "Beginner",
     color: "from-cyan-500 to-blue-600",
-    lessons: htmlMilestones.map((milestone) => ({
-      id: milestone.id,
-      title: milestone.title,
-      description: milestone.description,
-      duration: `${milestone.tasks.length} practical tasks`,
+    lessons: [...phaseOneSections.map((section, index) => ({
+      id: `html-section-${index + 1}`,
+      title: `Section ${index + 1}: ${section.title}`,
+      description: "Learn the concepts, complete the related task, and self-check before continuing.",
+      duration: "Learn, practice, and self-check",
       available: true,
-    })),
+    })), {
+      id: "html-final-project",
+      title: "Final Project: Student Profile & Course Portal",
+      description: "Build and submit six connected pages using only HTML.",
+      duration: "Six-page project",
+      available: true,
+    }],
   },
   {
     id: "explorers",
@@ -154,8 +167,52 @@ const courses: Course[] = [
 
 export default function CoursePage() {
   const { courseId } = useParams<{ courseId: string }>();
-  const course = courses.find((item) => item.id === courseId);
-  const progress = getProgress();
+  const [course, setCourse] = useState(() => courses.find((item) => item.id === courseId));
+  useEffect(() => {
+    if (courseId !== htmlCourseId) return;
+    let cancelled = false;
+    fetch(apiUrl("courses")).then(response => response.json()).then(async data => {
+      const record = data.courses?.find((item: { title: string }) => item.title.includes("Student Profile & Course Portal"));
+      if (!record) return;
+      const lessonData = await fetch(apiUrl(`courses/${record._id}/lessons`)).then(response => response.json());
+      if (cancelled) return;
+      const lessons: Lesson[] = (lessonData.lessons || []).map((item: { _id: string; title: string; description: string; duration: string; order: number; module: string; curriculum?: { topics?: unknown[]; tasks?: unknown[] } }) => ({
+        id: item.module.startsWith("Final Project:") || item.title.startsWith("Final Project:") ? `html-final-project-${item._id}` : item._id,
+        title: item.title, description: item.description, duration: item.duration, available: true, order: item.order,
+        topicCount: item.curriculum?.topics?.length || 0, taskCount: item.curriculum?.tasks?.length || 0,
+      }));
+      lessons.sort((a, b) => Number(a.id.startsWith("html-final-project-")) - Number(b.id.startsWith("html-final-project-")) || (a.order || 0) - (b.order || 0));
+      setCourse(current => current ? { ...current, title: record.title, description: record.description, lessons } : current);
+    }).catch(() => undefined);
+    return () => { cancelled = true; };
+  }, [courseId]);
+  const [progress, setProgress] = useState(getProgress);
+  useEffect(() => {
+    const auth = getAuth();
+    if (!auth?.token) return;
+    fetch(apiUrl("progress/me"), { headers: { Authorization: `Bearer ${auth.token}` } }).then(response => response.json()).then(data => {
+      setProgress(current => {
+        const merged = { ...current };
+        for (const item of data.progress || []) {
+          const id = item.lesson?._id;
+          if (!id) continue;
+          const courseLesson = course?.lessons.find(lesson => lesson.id === id || lesson.id.endsWith(id));
+          const curriculumProgress = item.curriculumProgress || {};
+          const quizAttempts = curriculumProgress.quizAttempts || [];
+          const lastQuizScore = quizAttempts.length ? quizAttempts[quizAttempts.length - 1].score : null;
+          const sectionComplete = courseLesson && (courseLesson.order || 0) <= 6
+            && (curriculumProgress.completedTopics || []).length >= (courseLesson.topicCount || Infinity)
+            && (curriculumProgress.completedTasks || []).length >= (courseLesson.taskCount || Infinity)
+            && lastQuizScore >= 67 && curriculumProgress.assessment?.passed;
+          const isProject = courseLesson?.id.startsWith("html-final-project-") || false;
+          const completed = isProject ? item.projectSubmission?.status === "complete" : Boolean(sectionComplete);
+          const key = courseLesson?.id || id;
+          merged[key] = { ...merged[key], completed, quizScore: lastQuizScore ?? item.quizScore ?? undefined, assignmentChecks: Object.fromEntries([...(curriculumProgress.completedTopics || []), ...(curriculumProgress.completedTasks || []), ...(item.projectProgress?.checklist || [])].map((value: string) => [value, true])) };
+        }
+        return merged;
+      });
+    }).catch(() => undefined);
+  }, [course?.lessons]);
 
   if (!course) {
     return (
@@ -181,9 +238,14 @@ export default function CoursePage() {
     (lesson) => progress[lesson.id]?.completed
   ).length;
 
-  const availableLessons = course.lessons.filter(
-    (lesson) => lesson.available
-  ).length;
+  const isLessonAvailable = (lesson: Lesson) => {
+    const sectionIndex = course?.lessons.findIndex(item => item.id === lesson.id) ?? -1;
+    const isProject = lesson.id.startsWith("html-final-project");
+    if (isProject) return lesson.available && course?.lessons.slice(0, 6).every(item => progress[item.id]?.completed);
+    return lesson.available && (sectionIndex <= 0 || Boolean(progress[course?.lessons[sectionIndex - 1]?.id || ""]?.completed));
+  };
+
+  const availableLessons = course.lessons.filter(isLessonAvailable).length;
 
   const percentage = Math.round(
     (completedCount / course.lessons.length) * 100
@@ -244,7 +306,7 @@ export default function CoursePage() {
               <div className="mt-6 flex flex-wrap gap-5 text-sm text-white/90">
                 <span className="flex items-center gap-2">
                   <BookOpen size={18} />
-                  {course.lessons.length} {course.id === htmlCourseId ? "milestones" : "lessons"}
+                  {course.id === htmlCourseId ? "6 learning sections + final project" : `${course.lessons.length} lessons`}
                 </span>
                 <span className="flex items-center gap-2">
                   <PlayCircle size={18} />
@@ -270,7 +332,7 @@ export default function CoursePage() {
               </div>
 
               <p className="mt-3 text-sm text-white/80">
-                {completedCount} of {course.lessons.length} {course.id === htmlCourseId ? "milestones" : "lessons"} completed
+                {completedCount} of {course.lessons.length} {course.id === htmlCourseId ? "learning units" : "lessons"} completed
               </p>
             </div>
           </div>
@@ -282,17 +344,18 @@ export default function CoursePage() {
               Course curriculum
             </p>
             <h2 className="mt-2 text-2xl font-black sm:text-3xl">
-              {course.id === htmlCourseId ? "Your milestones" : "Your lessons"}
+              {course.id === htmlCourseId ? "Six learning sections and final project" : "Your lessons"}
             </h2>
             <p className="mt-2 text-slate-400">
-              {course.id === htmlCourseId ? "Complete each milestone to track your course progress." : "Open an available lesson to learn and practice."}
+              {course.id === htmlCourseId ? "Continue through the milestones, then submit and revise your portfolio capstone." : "Open an available lesson to learn and practice."}
             </p>
           </div>
 
           <div className="space-y-4">
             {course.lessons.map((lesson, index) => {
               const isCompleted = Boolean(progress[lesson.id]?.completed);
-              const isLocked = !lesson.available;
+              const lessonAvailable = isLessonAvailable(lesson);
+              const isLocked = !lessonAvailable;
 
               return (
                 <article
@@ -334,7 +397,7 @@ export default function CoursePage() {
                         )}
                         {isLocked && (
                           <span className="rounded-full bg-slate-800 px-2 py-1 text-xs text-slate-400">
-                            Coming soon
+                            {lesson.id.startsWith("html-final-project") ? "Complete all six sections first" : "Complete the previous section first"}
                           </span>
                         )}
                       </div>
@@ -348,7 +411,7 @@ export default function CoursePage() {
                       </p>
                     </div>
 
-                    {lesson.available ? (
+                    {lessonAvailable ? (
                       <Link
                         to={`/lessons/${lesson.id}`}
                         className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-cyan-400 px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-300"
@@ -363,7 +426,7 @@ export default function CoursePage() {
                         className="inline-flex shrink-0 cursor-not-allowed items-center justify-center gap-2 rounded-xl bg-slate-800 px-4 py-3 text-sm font-bold text-slate-500"
                       >
                         <LockKeyhole size={16} />
-                        Coming Soon
+                        {lesson.id.startsWith("html-final-project") ? "Locked" : "Coming Soon"}
                       </button>
                     )}
                   </div>

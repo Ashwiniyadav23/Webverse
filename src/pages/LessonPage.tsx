@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -12,19 +12,8 @@ import {
   Trophy,
 } from "lucide-react";
 import { getProgress, saveLessonProgress } from "../utils/progress";
-import {
-  htmlMilestones,
-  htmlMilestoneOneAssignments,
-  htmlMilestoneOneInterviewQuestions,
-  htmlMilestoneOneTopics,
-  htmlMilestoneTwoAssignments,
-  htmlMilestoneTwoInterviewQuestions,
-  htmlMilestoneTwoTopics,
-  htmlMilestoneThreeAssignments,
-  htmlMilestoneThreeInterviewQuestions,
-  htmlMilestoneThreeTopics,
-} from "../data/htmlFundamentals";
-import HtmlFundamentalsMilestone from "./HtmlFundamentalsMilestone";
+import HtmlPhaseOnePage from "./HtmlPhaseOnePage";
+const HtmlFinalProjectPage = lazy(() => import("./HtmlFinalProjectPage"));
 
 type Question = {
   question: string;
@@ -52,28 +41,6 @@ type Lesson = {
 };
 
 const lessons: Lesson[] = [
-  ...htmlMilestones.map((milestone): Lesson => ({
-    id: milestone.id,
-    title: milestone.title,
-    description: milestone.description,
-    theory: [],
-    starterCode: milestone.tasks[0].starter,
-    expectedText: milestone.tasks[0].title,
-    hint: "Start with a meaningful document structure, then add one element at a time. Check that every opening tag is correctly nested and closed.",
-    questions: milestone.questions.map((item) => ({
-      question: item.question,
-      options: [item.answer, "HTML is only used to add colors.", "Browsers ignore this HTML feature."],
-      answer: 0,
-      explanation: item.answer,
-    })),
-    tasks: milestone.tasks,
-    interviewQuestions: milestone.questions,
-    mdn: milestone.mdn,
-    topics: milestone.topics,
-    syntax: milestone.syntax,
-    example: milestone.example,
-    coursePath: "/courses/html-fundamentals",
-  })),
   {
     id: "html-intro",
     title: "Introduction to HTML",
@@ -154,6 +121,9 @@ const lessons: Lesson[] = [
 
 export default function LessonPage() {
   const { lessonId } = useParams<{ lessonId: string }>();
+  if (lessonId?.startsWith("html-section-") || /^[a-f\d]{24}$/i.test(lessonId || "")) return <HtmlPhaseOnePage lessonId={lessonId!} />;
+  if (lessonId?.startsWith("html-final-project-")) return <Suspense fallback={<main className="min-h-screen bg-slate-950 p-8 text-white">Loading final project…</main>}><HtmlFinalProjectPage lessonId={lessonId.slice("html-final-project-".length)} /></Suspense>;
+  if (lessonId === "html-final-project") return <Suspense fallback={<main className="min-h-screen bg-slate-950 p-8 text-white">Loading final project…</main>}><HtmlFinalProjectPage /></Suspense>;
   const lesson = lessons.find((item) => item.id === lessonId);
 
   if (!lesson) {
@@ -176,43 +146,8 @@ export default function LessonPage() {
     );
   }
 
-  if (lesson.id === "html-milestone-1") {
-    return <HtmlFundamentalsMilestone
-      lessonId={lesson.id}
-      milestoneNumber={1}
-      milestoneTitle="HTML Fundamentals"
-      topics={htmlMilestoneOneTopics}
-      assignments={htmlMilestoneOneAssignments}
-      interviewQuestions={htmlMilestoneOneInterviewQuestions}
-      referenceTitle="MDN: Structuring content with HTML"
-      referenceUrl="https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Structuring_content"
-    />;
-  }
-
-  if (lesson.id === "html-milestone-2") {
-    return <HtmlFundamentalsMilestone
-      lessonId={lesson.id}
-      milestoneNumber={2}
-      milestoneTitle="Links, Images, Tables & Multimedia"
-      topics={htmlMilestoneTwoTopics}
-      assignments={htmlMilestoneTwoAssignments}
-      interviewQuestions={htmlMilestoneTwoInterviewQuestions}
-      referenceTitle="MDN: HTML elements reference"
-      referenceUrl="https://developer.mozilla.org/en-US/docs/Web/HTML/Element"
-    />;
-  }
-
-  if (lesson.id === "html-milestone-3") {
-    return <HtmlFundamentalsMilestone
-      lessonId={lesson.id}
-      milestoneNumber={3}
-      milestoneTitle="HTML Forms, Semantics & Accessibility"
-      topics={htmlMilestoneThreeTopics}
-      assignments={htmlMilestoneThreeAssignments}
-      interviewQuestions={htmlMilestoneThreeInterviewQuestions}
-      referenceTitle="MDN: HTML forms guide"
-      referenceUrl="https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Forms"
-    />;
+  if (lesson.id === "html-final-project") {
+    return <Suspense fallback={<main className="flex min-h-screen items-center justify-center bg-slate-950 text-white">Loading Final Project…</main>}><HtmlFinalProjectPage /></Suspense>;
   }
 
   return <LessonView key={lesson.id} lesson={lesson} />;

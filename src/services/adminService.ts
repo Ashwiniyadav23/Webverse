@@ -15,6 +15,7 @@ export interface AdminLesson {
   module: string;
   description: string;
   content: string;
+  curriculum?: Record<string, unknown>;
   videoUrl?: string;
   documentUrl?: string;
   resources: ResourceItem[];
@@ -62,6 +63,21 @@ export interface EnrolledStudentItem {
     role: string;
     createdAt?: string;
   };
+  progress?: {
+    lessonId: string;
+    lessonTitle: string;
+    order: number;
+    isProject: boolean;
+    completed: boolean;
+    completedTasks: string[];
+    completedTopics: string[];
+    quizScore: number | null;
+    assessmentPassed: boolean;
+    assessmentFeedback: string[];
+    projectStatus: string | null;
+    projectScore: number | null;
+    projectFeedback: string[];
+  }[];
 }
 
 export interface StudentUserItem {
@@ -87,6 +103,7 @@ export interface LessonInput {
   module: string;
   description: string;
   content: string;
+  curriculum?: Record<string, unknown>;
   videoUrl?: string;
   documentUrl?: string;
   resources: ResourceItem[];

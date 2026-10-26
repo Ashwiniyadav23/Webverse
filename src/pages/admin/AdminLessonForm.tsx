@@ -56,6 +56,8 @@ export default function AdminLessonForm() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [formErrors, setFormErrors] = useState<FormErrors>({});
+  const [curriculumJson, setCurriculumJson] = useState("");
+  const [curriculumError, setCurriculumError] = useState<string | null>(null);
 
   const defaultModule = searchParams.get("module") ?? "";
 
@@ -113,6 +115,7 @@ export default function AdminLessonForm() {
             module: lesson.module,
             description: lesson.description,
             content: lesson.content,
+            curriculum: lesson.curriculum,
             videoUrl: lesson.videoUrl ?? "",
             documentUrl: lesson.documentUrl ?? "",
             resources: lesson.resources ?? [],
@@ -120,6 +123,7 @@ export default function AdminLessonForm() {
             duration: lesson.duration,
             published: lesson.published,
           });
+          setCurriculumJson(lesson.curriculum ? JSON.stringify(lesson.curriculum, null, 2) : "");
         }
       })
       .catch((e: Error) => setError(e.message))
@@ -186,6 +190,7 @@ export default function AdminLessonForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setCurriculumError(null);
 
     const errors = validate(form);
     if (Object.keys(errors).length > 0) {
@@ -193,10 +198,23 @@ export default function AdminLessonForm() {
       return;
     }
 
+    let curriculum: Record<string, unknown> | undefined;
+    if (curriculumJson.trim()) {
+      try {
+        const parsed: unknown = JSON.parse(curriculumJson);
+        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("Curriculum must be a JSON object.");
+        curriculum = parsed as Record<string, unknown>;
+      } catch (reason) {
+        setCurriculumError(reason instanceof Error ? reason.message : "Invalid curriculum JSON");
+        return;
+      }
+    }
+
     setSaving(true);
     try {
       const payload: LessonInput = {
         ...form,
+        curriculum,
         videoUrl: form.videoUrl || undefined,
         documentUrl: form.documentUrl || undefined,
       };
@@ -391,6 +409,13 @@ export default function AdminLessonForm() {
           {formErrors.content && (
             <p className="mt-1 text-xs text-red-400">{formErrors.content}</p>
           )}
+        </section>
+
+        <section className="rounded-2xl border border-cyan-400/20 bg-slate-900/60 p-6">
+          <h2 className="mb-1 text-base font-semibold text-white">Structured learning content (JSON)</h2>
+          <p className="mb-4 text-xs leading-5 text-slate-400">For Phase 1 lessons, edit topics, editor tasks, quiz questions, and the separate assessment here. Each topic supports tag, what, why, how, example, output, and mistakes. Tasks use title, instructions, starterCode, and validation.requiredTags/requiredText. Quiz items use type (mcq, output, error), prompt, options, answerIndex, explanation, and optional snippet. Assessment uses title, prompt, starterCode, validation, testCases, and criteria. On the final project lesson, manage projectPages, submissionChecklist, and evaluationCriteria here. Leave blank for a standard lesson.</p>
+          <textarea value={curriculumJson} onChange={event => setCurriculumJson(event.target.value)} rows={18} spellCheck={false} aria-label="Structured lesson curriculum JSON" className="w-full resize-y rounded-xl border border-white/10 bg-slate-800 px-4 py-3 font-mono text-xs leading-5 text-cyan-100 focus:border-cyan-400 focus:outline-none" placeholder={'{\n  "topics": [],\n  "tasks": [],\n  "quiz": [],\n  "assessment": {}\n}'} />
+          {curriculumError && <p role="alert" className="mt-2 text-xs text-red-400">{curriculumError}</p>}
         </section>
 
         {/* Media */}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   Plus,
@@ -58,16 +58,8 @@ export default function AdminCourseLessons() {
   const [confirmRemoveStudent, setConfirmRemoveStudent] =
     useState<EnrolledStudentItem | null>(null);
 
-  useEffect(() => {
+  const loadLessons = useCallback(async () => {
     if (!courseId) return;
-    loadLessons();
-    loadStudents();
-  }, [courseId]);
-
-  async function loadLessons() {
-    if (!courseId) return;
-    setLoading(true);
-    setError(null);
     try {
       const res = await fetchCourseLessons(courseId);
       setCourse(res.course);
@@ -77,9 +69,9 @@ export default function AdminCourseLessons() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [courseId]);
 
-  async function loadStudents() {
+  const loadStudents = useCallback(async () => {
     if (!courseId) return;
     try {
       const res = await fetchCourseStudents(courseId);
@@ -89,7 +81,13 @@ export default function AdminCourseLessons() {
     } finally {
       setStudentsLoading(false);
     }
-  }
+  }, [courseId]);
+
+  useEffect(() => {
+    if (!courseId) return;
+    loadLessons();
+    loadStudents();
+  }, [courseId, loadLessons, loadStudents]);
 
   function toggleModule(name: string) {
     setCollapsedModules((prev) => {
@@ -489,6 +487,13 @@ export default function AdminCourseLessons() {
                     {item.student.name}
                   </p>
                   <p className="text-xs text-slate-500">{item.student.email}</p>
+                  {item.progress && <p className="mt-1 max-w-xl text-xs text-cyan-200">
+                    Sections: {item.progress.filter((entry) => !entry.isProject && entry.completed).length}/6 complete · Topics learned: {item.progress.filter(entry => !entry.isProject).reduce((total, entry) => total + entry.completedTopics.length, 0)} · Tasks: {item.progress.filter(entry => !entry.isProject).reduce((total, entry) => total + entry.completedTasks.length, 0)} · Last quiz: {item.progress.filter(entry => !entry.isProject).map(entry => entry.quizScore).filter(score => score !== null).slice(-1)[0] ?? "—"}% · Assessment: {item.progress.filter(entry => !entry.isProject && entry.assessmentPassed).length}/6 passed
+                    {item.progress.find((entry) => entry.projectStatus) && (() => {
+                      const project = item.progress!.find((entry) => entry.projectStatus)!;
+                      return <> · Project: {project.projectStatus}{project.projectScore !== null ? ` (${project.projectScore}/100)` : ""}{project.projectFeedback.length ? ` · Needs work: ${project.projectFeedback.slice(0, 2).join("; ")}` : ""}</>;
+                    })()}
+                  </p>}
                 </div>
                 <div className="flex items-center gap-4">
                   <span className="text-xs text-slate-500">
