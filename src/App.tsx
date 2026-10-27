@@ -17,6 +17,9 @@ import AdminCourseForm from "./pages/admin/AdminCourseForm";
 import AdminCourseLessons from "./pages/admin/AdminCourseLessons";
 import AdminLessonForm from "./pages/admin/AdminLessonForm";
 import AdminStudents from "./pages/admin/AdminStudents";
+import CssPhaseTwoCoursePage from "./pages/CssPhaseTwoCoursePage";
+import CssPhaseTwoLessonPage from "./pages/CssPhaseTwoLessonPage";
+import CombinedPortfolioAssessmentPage from "./pages/CombinedPortfolioAssessmentPage";
 
 import {
   BookOpen,
@@ -66,6 +69,9 @@ function App() {
       <Route path="/" element={<HomePage />} />
       <Route path="/home" element={<WebVerseLanding />} />
       <Route element={<StudentAccessRoute />}>
+        <Route path="/final-assessment/portfolio" element={<CombinedPortfolioAssessmentPage />} />
+        <Route path="/courses/css-phase-two" element={<CssPhaseTwoCoursePage />} />
+        <Route path="/css-lessons/:lessonId" element={<CssPhaseTwoLessonPage />} />
         <Route path="/courses/:courseId" element={<CoursePage />} />
         <Route path="/lessons/:lessonId" element={<LessonPage />} />
       </Route>

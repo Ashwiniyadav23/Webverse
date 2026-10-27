@@ -26,6 +26,24 @@ const courses = [
     gradient: "from-cyan-400/15 to-blue-500/5",
   },
   {
+    id: "css-phase-two",
+    level: "Beginner · Phase 2",
+    title: "Dressing Up Your Websites with CSS",
+    description: "Style the six-page student portal with CSS and make it responsive across screen sizes.",
+    topics: ["Typography", "Flexbox", "Grid", "Responsive design"],
+    icon: Palette,
+    gradient: "from-fuchsia-400/15 to-violet-500/5",
+  },
+  {
+    id: "portfolio-final-assessment",
+    level: "Final assessment · HTML + CSS",
+    title: "Build Your Own Portfolio",
+    description: "Put your HTML and CSS skills together in an independent portfolio project.",
+    topics: ["HTML", "CSS", "Responsive design", "Portfolio"],
+    icon: Trophy,
+    gradient: "from-amber-400/15 to-orange-500/5",
+  },
+  {
     id: "explorers",
     level: "Classes 6–8",
     title: "Web Explorers",
@@ -303,14 +321,14 @@ function HomePage() {
               />
             </div>
 
-            <div className="mt-10 grid gap-6 md:grid-cols-3">
+            <div className="mt-10 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
               {courses.map((course, index) => {
                 const Icon = course.icon;
 
                 return (
                   <Link
                     key={course.id}
-                    to={`/courses/${course.id}`}
+                    to={course.id === "portfolio-final-assessment" ? "/final-assessment/portfolio" : `/courses/${course.id}`}
                     className={`group rounded-2xl border border-white/10 bg-gradient-to-br ${course.gradient} p-6 transition duration-300 hover:-translate-y-1 hover:border-cyan-400/50`}
                   >
                     <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-slate-950/70 text-cyan-400 transition group-hover:scale-110">
