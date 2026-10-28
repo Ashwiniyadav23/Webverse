@@ -59,20 +59,33 @@ export default function HtmlPhaseOnePage({ lessonId }: { lessonId: string }) {
   const [assessmentResult, setAssessmentResult] = useState<CheckResult | null>(() => getProgress()[lessonId]?.assignmentChecks?.["assessment-passed"] === true ? { score: 100, passed: true, feedback: ["Assessment passed."] } : null);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [lessonLoading, setLessonLoading] = useState(/^[a-f\d]{24}$/i.test(lessonId));
+  const [lessonLoadError, setLessonLoadError] = useState("");
+  const [reloadLesson, setReloadLesson] = useState(0);
 
   useEffect(() => {
     if (!/^[a-f\d]{24}$/i.test(lessonId)) return;
     let active = true;
-    fetch(apiUrl(`lessons/${lessonId}`)).then(response => response.json()).then(async data => {
-      if (!active || !data.lesson) return;
+    setLessonLoading(true);
+    setLessonLoadError("");
+    fetch(apiUrl(`lessons/${lessonId}`)).then(async response => {
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Unable to load this lesson.");
+      return data;
+    }).then(async data => {
+      if (!active) return;
+      if (!data.lesson) throw new Error("This lesson could not be found.");
       const row = data.lesson as Lesson;
       setLesson(row);
       const curriculum = row.curriculum;
       setTaskDrafts(Object.fromEntries((curriculum?.tasks || []).map((task, i) => [i, task.starterCode])));
       setAssessmentCode(curriculum?.assessment?.starterCode || "");
+      if (!curriculum) setLessonLoadError("This lesson has no structured curriculum yet. Ask an admin to publish its curriculum.");
+      setLessonLoading(false);
       const auth = getAuth();
       if (auth?.token) {
         const progressData = await fetch(apiUrl("progress/me"), { headers: { Authorization: `Bearer ${auth.token}` } }).then(response => response.json()).catch(() => null);
+        if (!active) return;
         const record = progressData?.progress?.find((item: { lesson?: { _id?: string }; curriculumProgress?: Record<string, unknown> }) => item.lesson?._id === lessonId);
         if (record?.curriculumProgress) {
           const cp = record.curriculumProgress;
@@ -83,9 +96,11 @@ export default function HtmlPhaseOnePage({ lessonId }: { lessonId: string }) {
           if (cp.assessment && typeof cp.assessment === "object") setAssessmentResult({ score: (cp.assessment as { score: number }).score, passed: (cp.assessment as { passed: boolean }).passed, feedback: (cp.assessment as { feedback: string[] }).feedback || [] });
         }
       }
-    }).catch(() => undefined);
+    }).catch(error => {
+      if (active) setLessonLoadError(error instanceof Error ? error.message : "Unable to load this lesson.");
+    }).finally(() => { if (active) setLessonLoading(false); });
     return () => { active = false; };
-  }, [lessonId]);
+  }, [lessonId, reloadLesson]);
 
   const fallback = phaseOneSections[staticIndex];
   const index = lesson?.order ? lesson.order - 1 : staticIndex;
@@ -180,7 +195,8 @@ export default function HtmlPhaseOnePage({ lessonId }: { lessonId: string }) {
     } finally { setSaving(false); }
   }
 
-  if (!curriculum) return <main className="min-h-screen bg-slate-950 p-8 text-white"><Link to="/courses/html-fundamentals" className="text-cyan-300">← Back to course</Link><p className="mt-6">This lesson is still loading or needs its structured curriculum published by an admin.</p></main>;
+  if (lessonLoading) return <main className="min-h-screen bg-slate-950 p-8 text-white"><Link to="/courses/html-fundamentals" className="text-cyan-300">← Back to course</Link><p role="status" className="mt-6">Loading lesson…</p></main>;
+  if (lessonLoadError || !curriculum) return <main className="min-h-screen bg-slate-950 p-8 text-white"><Link to="/courses/html-fundamentals" className="text-cyan-300">← Back to course</Link><p role="alert" className="mt-6">{lessonLoadError || "This lesson has no structured curriculum yet. Ask an admin to publish its curriculum."}</p>{lessonLoadError && <button type="button" onClick={() => setReloadLesson(value => value + 1)} className="mt-4 rounded-lg bg-cyan-400 px-4 py-2 font-bold text-slate-950">Try again</button>}</main>;
 
   return <div className="min-h-screen bg-slate-950 text-white"><header className="border-b border-white/10"><div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5"><Link to="/" className="flex items-center gap-2"><Code2 className="text-cyan-400"/><strong>WebVerse</strong></Link><Link to="/courses/html-fundamentals" className="text-sm text-slate-300"><ArrowLeft className="mr-2 inline" size={16}/>Course sections</Link></div></header>
     <main className="mx-auto max-w-6xl space-y-7 px-5 py-8"><p className="text-sm font-bold uppercase tracking-widest text-cyan-400">HTML only · Section {index + 1} of 6</p><h1 className="text-3xl font-black">{title}</h1><p className="text-slate-300">Learn every topic, practise each task in the editor, pass the quiz, then pass the independent assessment.</p>
